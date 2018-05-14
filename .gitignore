@@ -1,3 +1,5 @@
+.DS_Store
+
 *.pyc
 *.swp
 *.swo
@@ -7,3 +9,5 @@ dist
 *egg-info*
 htmlcov
 .coverage
+.idea/*
+fig/*
