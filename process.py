@@ -66,7 +66,7 @@ def test():
 
 
 # Output plot
-def plot_mj(output_filename, mention_map, votes_dict_mention, candidate_map, candidate_order=None):
+def plot_mj(output_filename, grade_map, votes_dict_grade, candidate_map, candidate_order=None):
     # Check arguments
     if candidate_order is None:
         candidate_order = sorted(candidate_map.keys())
@@ -75,7 +75,7 @@ def plot_mj(output_filename, mention_map, votes_dict_mention, candidate_map, can
             raise ValueError("candidate_order list must have the same length as candidate_map")
 
     # Prepare data and plot
-    n_votes = sum([votes_mention[0] for votes_mention in votes_dict_mention.values()])
+    n_votes = sum([votes_grade[0] for votes_grade in votes_dict_grade.values()])
     ind = range(len(candidate_map.keys()))
     cumulated = np.zeros(len(ind), dtype=int)
 
@@ -84,14 +84,14 @@ def plot_mj(output_filename, mention_map, votes_dict_mention, candidate_map, can
     lgd_labels = []
 
     # Build stacked bar plot
-    for mention_id in sorted(mention_map.keys()):
+    for grade_id in sorted(grade_map.keys()):
         # -- Rearrange candidate order if necessary
-        votes = np.array([votes_dict_mention[mention_id][candidate_id]
+        votes = np.array([votes_dict_grade[grade_id][candidate_id]
                           for candidate_id in candidate_order],
                          dtype=int)
         plot_list.append(plt.bar(ind, votes, bottom=cumulated,
-                                 color=cm.RdYlGn(float(mention_id) / len(mention_map))))
-        lgd_labels.append(mention_map[mention_id])
+                                 color=cm.RdYlGn(float(grade_id) / len(grade_map))))
+        lgd_labels.append(grade_map[grade_id])
         cumulated += votes
 
     # Add median line
@@ -122,16 +122,16 @@ def cli(filename):
         csv_lines = [line for line in csv_reader]
 
     # Prepare data structures
-    # -- Map: mention_name <=> mention_id
-    mention_map = bidict({0: "To Reject",
+    # -- Map: grade_name <=> grade_id
+    grade_map = bidict({0: "To Reject",
                           1: "Poor",
                           2: "Acceptable",
                           3: "Good",
                           4: "Very Good",
                           5: "Excellent"})
 
-    print("Variable: mention_map ".ljust(66, "-"))
-    pprint(dict(mention_map))
+    print("Variable: grade_map ".ljust(66, "-"))
+    pprint(dict(grade_map))
 
     # -- Map: candidate_name <=> candidate_id
     candidate_map = bidict()
@@ -140,17 +140,17 @@ def cli(filename):
     print("Variable: candidate_map ".ljust(66, "-"))
     pprint(dict(candidate_map))
 
-    # -- Dict: candidate_id => per-mention breakdown
-    init_list = [0 for i in range(len(mention_map))]
+    # -- Dict: candidate_id => per-grade breakdown
+    init_list = [0 for i in range(len(grade_map))]
     votes_dict_candidate = OrderedDict([(candidate_id, init_list[:])
                                         for candidate_id in range(len(candidate_map))])
     # pprint(dict(votes_dict_candidate))
 
-    # -- Dict: mention_id => per-candidate breakdown
+    # -- Dict: grade_id => per-candidate breakdown
     init_list = [0 for i in range(len(candidate_map))]
-    votes_dict_mention = OrderedDict([(mention_id, init_list[:])
-                                      for mention_id in range(len(mention_map))])
-    # pprint(dict(votes_dict_mention))
+    votes_dict_grade = OrderedDict([(grade_id, init_list[:])
+                                      for grade_id in range(len(grade_map))])
+    # pprint(dict(votes_dict_grade))
 
     # Process data
     print("Vote processing ".ljust(66, "-"))
@@ -162,21 +162,21 @@ def cli(filename):
         for candidate_id in range(len(line) - 1):
             candidate_name = candidate_map[candidate_id]
 
-            mention_name = line[candidate_id + 1]
+            grade_name = line[candidate_id + 1]
             try:
-                mention_id = mention_map.inv[mention_name]
-                print("    {}: {}".format(candidate_name, mention_name))
+                grade_id = grade_map.inv[grade_name]
+                print("    {}: {}".format(candidate_name, grade_name))
             except KeyError:
-                mention_name = "To Reject"
-                mention_id = mention_map.inv[mention_name]
-                print("    {}: {}*".format(candidate_name, mention_name))
+                grade_name = "To Reject"
+                grade_id = grade_map.inv[grade_name]
+                print("    {}: {}*".format(candidate_name, grade_name))
 
-            votes_dict_candidate[candidate_id][mention_id] += 1
-            votes_dict_mention[mention_id][candidate_id] += 1
+            votes_dict_candidate[candidate_id][grade_id] += 1
+            votes_dict_grade[grade_id][candidate_id] += 1
     print("Variable: votes_dict_candidate ".ljust(66, "-"))
     pprint(dict(votes_dict_candidate))
-    print("Variable: votes_dict_mention ".ljust(66, "-"))
-    pprint(dict(votes_dict_mention))
+    print("Variable: votes_dict_grade ".ljust(66, "-"))
+    pprint(dict(votes_dict_grade))
 
     # Cast results to Votes
     votes_list = [Votes(candidate_map[candidate_id], votes_dict_candidate[candidate_id])
@@ -193,13 +193,13 @@ def cli(filename):
 
     # Plot in alphabetical order
     plot_mj("{}_alpha.png".format(outfilename_prefix),
-            mention_map, votes_dict_mention, candidate_map)
+            grade_map, votes_dict_grade, candidate_map)
 
     # Plot in MJ order
     candidate_order_mj = [candidate_map.inv[votes.name]
                           for votes in votes_list]
     plot_mj("{}_mj.png".format(outfilename_prefix),
-            mention_map, votes_dict_mention, candidate_map, candidate_order=candidate_order_mj)
+            grade_map, votes_dict_grade, candidate_map, candidate_order=candidate_order_mj)
 
 
 if __name__ == "__main__":
